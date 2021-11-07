@@ -24,10 +24,16 @@ fn treat_dir(
             treat_dir(watch_list, watch_header, enc_flag, path_str);
             continue;
         }
-        let ext = splitext(&*path_str).unwrap().to_lowercase();
+        let ext = match splitext(&*path_str) {
+            None => String::from(""),
+            Some(res) => {
+                String::from(res)
+            },
+        };
         if watch_list.contains(&&*ext) {
             // 文件扩展名存在于监视列表中
             let mut f = fs::File::open(&path_str).expect("Something went wrong reading the file");
+            // buffer 20M
             let mut buf: Vec<u8> = vec![0; 20971520];
             let n:usize = f.read(&mut buf[..]).unwrap();
             if (n > 4) && (watch_header.contains(&buf[..4].try_into().expect("Slice with incorrect length"))){
@@ -72,7 +78,9 @@ fn main() {
 
     let watch_list: Vec<&str> = vec!["png","jpg","jpeg","bmp","webp"];
     let watch_header: Vec<[u8; 4]> = vec![
-        [255, 216, 255, 225],
+        [255, 216, 255, 254],
+        [255, 216, 255, 237],
+        [255, 216, 255, 226],
         [255, 216, 255, 224], 
         [255, 216, 255, 219],
         [82, 73, 70, 70],
