@@ -138,7 +138,29 @@ fn header_checker(
     false
 }
 
+fn reverse_single_file(
+    path_str: &String,
+    watch_list: &Vec<&str>,
+) {
+    // buffer 20M
+    let mut f = fs::File::open(&path_str).expect("Something went wrong reading the file");
+    let mut buf: Vec<u8> = vec![0; 20971520];
+    let n:usize = f.read(&mut buf[..]).unwrap();
+    let ext = match path_splitext(&*path_str) {
+        None => String::from(""),
+        Some(res) => {
+            String::from(res)
+        },
+    };
+    if watch_list.contains(&&*ext) {
+        reverse_file(&buf, n, &path_str)
+    }   
+}
+
 fn main() {
+    let watch_list: Vec<&str> = vec!["png","jpg","jpeg","webp"];
+    let mut s_dir_str = String::from(".\\");
+
     let args: Vec<String> = env::args().collect();
     let enc_str: String = String::from("--enc");
     let dec_str: String = String::from("--dec");
@@ -152,18 +174,24 @@ fn main() {
         } else if help_str.eq(&args[1]) {
             println!("Help: todo.");
             return ();
+        } else if Path::new(&args[1]).is_file() {
+            return reverse_single_file(&args[1], &watch_list);
+        } else {
+            let md = fs::metadata(&args[1]).unwrap();
+            if md.is_dir() {
+                // 想解码直接双击运行就行了，所以拖入文件夹大概率是加密
+                s_dir_str = args[1].clone();
+                enc_flag = true;
+            }
         }
     }
 
-    let watch_list: Vec<&str> = vec!["png","jpg","jpeg","webp"];
     let watch_header_jpeg: Vec<u8> = vec![1,2,3,6];
     let watch_header_png: [u8; 4] = [137, 80, 78, 71];
     let watch_header_png_2: [u8; 4] = [73, 72, 68, 82];
     let watch_header_webp: [u8; 4] = [82, 73, 70, 70];
     let watch_header_webp_2: [u8; 4] = [87, 69, 66, 80];
 
-
-    let s_dir_str = String::from(".\\");
     dir_handler(
         &watch_list, 
         &watch_header_jpeg, 
